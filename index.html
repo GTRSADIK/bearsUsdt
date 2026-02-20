@@ -514,87 +514,69 @@
         function loadTasks(){
 
     db.collection(`artifacts/${appId}/public/data/tasks`)
-    .where("active","==",true)
     .get()
     .then(snapshot=>{
 
-        let html = "";
+        const container = document.getElementById("task-list");
+        container.innerHTML = "";
 
         snapshot.forEach(doc=>{
-            const d = doc.data();
 
-            html += `
-            <div style="
-                background: linear-gradient(145deg,#1e293b,#0f172a);
-                padding:15px;
-                margin-bottom:15px;
-                border-radius:16px;
-                box-shadow: 0 0 15px rgba(59,130,246,0.4);
-                border:1px solid #3b82f6;
-            ">
+            const task = doc.data();
+            const taskId = doc.id;
 
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                    
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png"
-                             style="width:30px;height:30px;border-radius:6px;">
+            const username = task.channel.replace("@","");
+
+            const link = `https://t.me/${username}`;
+
+            container.innerHTML += `
+                <div class="task-card">
+                    <div class="flex justify-between items-center">
+
                         <div>
-                            <h4 style="color:white;margin:0;">${d.title}</h4>
-                            <p style="color:#ffd700;font-size:12px;margin:0;">
-                                +${d.reward} Coins
-                            </p>
+                            <h3>${task.title}</h3>
+                            <p>Reward: ${task.reward} Coins</p>
                         </div>
-                    </div>
 
-                    <div id="task-btn-${doc.id}">
-                        <button onclick="startTask('${doc.id}','${d.link}',${d.reward})"
-                            style="
-                                background:#2563eb;
-                                border:none;
-                                padding:8px 12px;
-                                color:white;
-                                border-radius:8px;
-                                font-size:12px;
-                            ">
+                        <button id="task-btn-${taskId}"
+                            onclick="startTask('${taskId}','${task.channel}',${task.reward})"
+                            class="bg-indigo-600 px-4 py-2 rounded-lg">
                             Join
                         </button>
-                    </div>
 
+                    </div>
                 </div>
-            </div>
             `;
+
         });
 
-        document.getElementById("task-list").innerHTML = html;
-
     });
+
 }
 
 
 // START TASK (OPEN LINK)
-function startTask(taskId, link, reward){
+function startTask(taskId, channel, reward){
+
+    const username = channel.replace("@","");
+
+    const link = `https://t.me/${username}`;
 
     localStorage.setItem("verifyTask", JSON.stringify({
-        taskId,
-        reward,
-        link
+        reward: reward,
+        channel: channel
     }));
 
     window.open(link, "_blank");
 
-    document.getElementById("task-btn-"+taskId).innerHTML = `
-        <button onclick="verifyTask('${taskId}')"
-            style="
-                background:#22c55e;
-                border:none;
-                padding:8px 12px;
-                color:white;
-                border-radius:8px;
-                font-size:12px;
-            ">
-            Verify
-        </button>
-    `;
+    setTimeout(()=>{
+        document.getElementById("task-btn-"+taskId).innerHTML =
+        `<button onclick="verifyTask('${taskId}')"
+        class="bg-green-600 px-4 py-2 rounded-lg">
+        Verify
+        </button>`;
+    }, 3000);
+
 }
 
 // VERIFY TASK
@@ -680,109 +662,72 @@ function startTask(taskId, link, reward){
             } catch(e) { userData = { balance: 0, referralCode: 'ERR' }; updateHeader(); }
 
         }
-
-         async function verifyTask(taskId){
+      async function verifyTask(taskId){
 
     try{
 
-        // Telegram check
-        if(!window.Telegram || !window.Telegram.WebApp){
-            alert("Open inside Telegram");
-            return;
-        }
-
-        const telegramUserId =
-            window.Telegram.WebApp.initDataUnsafe?.user?.id;
+        const tg = window.Telegram.WebApp;
+        const telegramUserId = tg.initDataUnsafe?.user?.id;
 
         if(!telegramUserId){
-            alert("Telegram user not found");
+            alert("Open from Telegram");
             return;
         }
 
-        // Get stored task
-        const stored = localStorage.getItem("verifyTask");
-        if(!stored){
-            alert("No task data");
-            return;
-        }
+        const data = JSON.parse(localStorage.getItem("verifyTask"));
+        if(!data) return;
 
-        const data = JSON.parse(stored);
         const reward = data.reward;
-        const link = data.link;
-
-        if(!link){
-            alert("Task link missing");
-            return;
-        }
-
-        // Extract username from link
-        let username = link
-            .replace("https://t.me/", "")
-            .replace("http://t.me/", "")
-            .split("?")[0]
-            .replace("/", "");
-
-        if(!username){
-            alert("Invalid channel link");
-            return;
-        }
+        const channel = data.channel; // @username
 
         const BOT_TOKEN = "8158661206:AAG5kJCm_pdGlenuSdALkIHhsnZfK0izdQ8";
 
-        const url =
-            "https://api.telegram.org/bot" +
-            BOT_TOKEN +
-            "/getChatMember?chat_id=@" +
-            username +
-            "&user_id=" +
-            telegramUserId;
+        const response = await fetch(
+            `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${channel}&user_id=${telegramUserId}`
+        );
 
-        const response = await fetch(url);
         const result = await response.json();
 
-        if(!result.ok){
-            alert(result.description || "Verification failed");
-            return;
-        }
+        if(result.ok){
 
-        const status = result.result.status;
+            const status = result.result.status;
 
-        if(
-            status === "member" ||
-            status === "administrator" ||
-            status === "creator"
-        ){
+            if(status === "member" ||
+               status === "administrator" ||
+               status === "creator"){
 
-            // Add reward
-            await db.doc(
-                `artifacts/${appId}/users/${currentUserId}/profile/main`
-            ).update({
-                balance: firebase.firestore.FieldValue.increment(reward),
-                completedTaskCount: firebase.firestore.FieldValue.increment(1)
-            });
+                await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
+                .update({
+                    balance: firebase.firestore.FieldValue.increment(reward),
+                    completedTaskCount: firebase.firestore.FieldValue.increment(1)
+                });
 
-            await db.collection(
-                `artifacts/${appId}/users/${currentUserId}/completedTasks`
-            ).doc(taskId).set({
-                completedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+                await db.collection(`artifacts/${appId}/users/${currentUserId}/completedTasks`)
+                .doc(taskId)
+                .set({
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
-            document.getElementById("task-btn-"+taskId).innerHTML =
+                document.getElementById("task-btn-"+taskId).innerHTML =
                 `<span style="color:#22c55e;font-weight:bold;">Done ✅</span>`;
 
-            localStorage.removeItem("verifyTask");
+                localStorage.removeItem("verifyTask");
+
+            } else {
+                alert("Join channel first");
+            }
 
         } else {
-
-            alert("Join channel first");
-
+            alert(result.description);
         }
 
-}catch(error){
+    }catch(error){
         alert("Verification Error");
         console.log(error);
     }
-}
+
+        }
+         
        
         async function processReferral(code) {
             if(!code) return; code = code.trim().toUpperCase();
@@ -1243,6 +1188,7 @@ function startTask(taskId, link, reward){
 </body>
 
 </html>
+
 
 
 
