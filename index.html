@@ -597,20 +597,16 @@ id="nav-task">
 
 
 // START TASK (OPEN LINK)
-function startTask(taskId, link, reward){
-
-    if(!link){
-        alert("Task link missing");
-        return;
-    }
+   function startTask(taskId, link, reward){
 
     localStorage.setItem("verifyTask", JSON.stringify({
-        taskId: taskId,
-        link: link,
-        reward: reward
+        taskId,
+        link,
+        reward
     }));
 
     window.open(link, "_blank");
+   }
 
     document.getElementById("task-btn-"+taskId).innerHTML = `
         <button onclick="verifyTask()"
@@ -1306,6 +1302,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
