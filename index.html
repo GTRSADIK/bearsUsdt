@@ -599,22 +599,35 @@ id="nav-task">
 // START TASK (OPEN LINK)
    function startTask(taskId, link, reward){
 
+    if(!link){
+        alert("Task link missing");
+        return;
+    }
+
+    // Save task data
     localStorage.setItem("verifyTask", JSON.stringify({
         taskId,
         link,
         reward
     }));
 
+    // Open channel
     window.open(link, "_blank");
-   }
 
-    document.getElementById("task-btn-"+taskId).innerHTML = `
-        <button onclick="verifyTask()"
-        class="bg-yellow-500 px-4 py-2 rounded-xl text-black text-sm">
-            Verify
-        </button>
-    `;
-}
+    // Change button to Verify
+    const btnContainer = document.getElementById("task-btn-"+taskId);
+
+    if(btnContainer){
+        btnContainer.innerHTML = `
+            <button onclick="verifyTask()"
+                class="bg-yellow-500 hover:bg-yellow-600
+                px-5 py-2 rounded-xl text-black text-sm
+                shadow-lg transition duration-200">
+                Verify
+            </button>
+        `;
+    }
+        }
 function loadhomeTasks(){
 
     db.collection(`artifacts/${appId}/public/data/tasks`)
@@ -1302,6 +1315,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
