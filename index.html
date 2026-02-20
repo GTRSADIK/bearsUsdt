@@ -685,8 +685,9 @@ function startTask(taskId, link, reward){
 
     try{
 
+        // Telegram check
         if(!window.Telegram || !window.Telegram.WebApp){
-            alert("Open inside Telegram WebApp");
+            alert("Open inside Telegram");
             return;
         }
 
@@ -694,16 +695,18 @@ function startTask(taskId, link, reward){
             window.Telegram.WebApp.initDataUnsafe?.user?.id;
 
         if(!telegramUserId){
-            alert("Telegram user not detected");
+            alert("Telegram user not found");
             return;
         }
 
-        const data = JSON.parse(localStorage.getItem("verifyTask"));
-        if(!data){
-            alert("Task data missing");
+        // Get stored task
+        const stored = localStorage.getItem("verifyTask");
+        if(!stored){
+            alert("No task data");
             return;
         }
 
+        const data = JSON.parse(stored);
         const reward = data.reward;
         const link = data.link;
 
@@ -712,10 +715,11 @@ function startTask(taskId, link, reward){
             return;
         }
 
-        // Extract username safely
+        // Extract username from link
         let username = link
             .replace("https://t.me/", "")
             .replace("http://t.me/", "")
+            .split("?")[0]
             .replace("/", "");
 
         if(!username){
@@ -725,10 +729,15 @@ function startTask(taskId, link, reward){
 
         const BOT_TOKEN = "8158661206:AAG5kJCm_pdGlenuSdALkIHhsnZfK0izdQ8";
 
-        const response = await fetch(
-            `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=@${username}&user_id=${telegramUserId}`
-        );
+        const url =
+            "https://api.telegram.org/bot" +
+            BOT_TOKEN +
+            "/getChatMember?chat_id=@" +
+            username +
+            "&user_id=" +
+            telegramUserId;
 
+        const response = await fetch(url);
         const result = await response.json();
 
         if(!result.ok){
@@ -738,19 +747,23 @@ function startTask(taskId, link, reward){
 
         const status = result.result.status;
 
-        if(status === "member" ||
-           status === "administrator" ||
-           status === "creator"){
+        if(
+            status === "member" ||
+            status === "administrator" ||
+            status === "creator"
+        ){
 
-            await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-            .update({
+            // Add reward
+            await db.doc(
+                `artifacts/${appId}/users/${currentUserId}/profile/main`
+            ).update({
                 balance: firebase.firestore.FieldValue.increment(reward),
                 completedTaskCount: firebase.firestore.FieldValue.increment(1)
             });
 
-            await db.collection(`artifacts/${appId}/users/${currentUserId}/completedTasks`)
-            .doc(taskId)
-            .set({
+            await db.collection(
+                `artifacts/${appId}/users/${currentUserId}/completedTasks`
+            ).doc(taskId).set({
                 completedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -760,13 +773,17 @@ function startTask(taskId, link, reward){
             localStorage.removeItem("verifyTask");
 
         } else {
+
             alert("Join channel first");
+
         }
 
-    }catch(error){
-    alert("Verification Error");
-    console.log(error);
-}
+    }catch(err){
+
+        alert("Verification Error");
+        console.log(err);
+
+    }
     }
        
         async function processReferral(code) {
@@ -783,7 +800,7 @@ function startTask(taskId, link, reward){
                     referredBy: code
                 });
                 showToast(`Bonus: +${SETTINGS.signupBonus} Coins!`, "success");
-                const referrerId = refCodeDoc.data().userId;
+               const referrerId = refCodeDoc.data().userId;
                 const referrerRef = db.collection(`artifacts/${appId}/users/${referrerId}/profile`).doc('main');
                 try {
                     await referrerRef.update({
@@ -1228,6 +1245,7 @@ function startTask(taskId, link, reward){
 </body>
 
 </html>
+
 
 
 
