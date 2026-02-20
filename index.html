@@ -833,10 +833,17 @@ function loadhomeTasks(){
             status === "creator"
         ){
 
-            await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-            .update({
-                balance: firebase.firestore.FieldValue.increment(Number(reward))
-            });
+            const currentUserId = firebase.auth().currentUser?.uid;
+
+if(!currentUserId){
+    alert("User not logged in");
+    return;
+}
+
+await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
+.update({
+    balance: firebase.firestore.FieldValue.increment(Number(reward))
+});
 
             const btn = document.getElementById("task-btn-"+taskId);
             if(btn){
@@ -1318,6 +1325,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
