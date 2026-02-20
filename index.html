@@ -560,7 +560,7 @@ id="nav-task">
 
             const task = doc.data();
             const taskId = doc.id;
-
+            console.log(task.link);
             if(task.active !== true) return;
 
             const div = document.createElement("div");
@@ -1390,4 +1390,5 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
