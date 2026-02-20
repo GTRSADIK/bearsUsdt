@@ -812,46 +812,52 @@ function loadhomeTasks(){
 
         const result = await response.json();
 
-        console.log("Full result:", result);
+        console.log("Verify Response:", result);
 
-        // 🔥 IMPORTANT FIX
-        if(result.ok === true && result.result){
+        // 🔥 If Telegram API returns error
+        if(result.ok === false){
+            alert(result.description || result.error || "Telegram API Error");
+            return;
+        }
 
-            const status = result.result.status;
+        if(!result.result){
+            alert("Invalid response from server");
+            return;
+        }
 
-            if(
-                status === "member" ||
-                status === "administrator" ||
-                status === "creator"
-            ){
+        const status = result.result.status;
 
-                await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-                .update({
-                    balance: firebase.firestore.FieldValue.increment(Number(reward))
-                });
+        if(
+            status === "member" ||
+            status === "administrator" ||
+            status === "creator"
+        ){
 
-                const btn = document.getElementById("task-btn-"+taskId);
+            await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
+            .update({
+                balance: firebase.firestore.FieldValue.increment(Number(reward))
+            });
 
-                if(btn){
-                    btn.innerHTML =
-                        `<span class="text-green-400 font-bold">Done ✅</span>`;
-                }
-
-                localStorage.removeItem("verifyTask");
-
-                alert("✅ Task Completed + Reward Added");
-
-            }else{
-                alert("❌ Join channel first");
+            const btn = document.getElementById("task-btn-"+taskId);
+            if(btn){
+                btn.innerHTML =
+                    `<span class="text-green-400 font-bold">Done ✅</span>`;
             }
 
+            localStorage.removeItem("verifyTask");
+
+            alert("✅ Task Completed");
+
         }else{
-            alert("❌ Verification failed");
+            alert("You are not a member of this channel.");
         }
 
     }catch(error){
-        console.log("Verification Error:", error);
-        alert("Verification Error");
+
+        // 🔥 Show REAL JS error
+        console.log("JS Error:", error);
+        alert(error.message || error.toString());
+
     }
         }
         async function processReferral(code) {
@@ -1312,6 +1318,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
