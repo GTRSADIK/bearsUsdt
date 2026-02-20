@@ -811,8 +811,7 @@ function loadhomeTasks(){
                 ref.onSnapshot(snapshot => { if (snapshot.exists) { userData = snapshot.data(); updateHeader(); } });
             } catch(e) { userData = { balance: 0, referralCode: 'ERR' }; updateHeader(); }
         }
-
-       async function verifyTask(){
+      async function verifyTask(){
 
     try{
 
@@ -837,6 +836,25 @@ function loadhomeTasks(){
 
         const { taskId, link, reward } = data;
 
+        const currentUser = firebase.auth().currentUser;
+        if(!currentUser){
+            alert("User not logged in");
+            return;
+        }
+
+        const currentUserId = currentUser.uid;
+        const userRef = db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`);
+
+        const userSnap = await userRef.get();
+        const userData = userSnap.data() || {};
+
+        // 🔥 Already completed check
+        if(userData.completedTasks && userData.completedTasks[taskId]){
+            alert("Already completed");
+            return;
+        }
+
+        // Extract username properly
         let username = link
             .replace("https://t.me/", "")
             .replace("http://t.me/", "")
@@ -853,16 +871,8 @@ function loadhomeTasks(){
 
         const result = await response.json();
 
-        console.log("Verify Response:", result);
-
-        // 🔥 If Telegram API returns error
-        if(result.ok === false){
-            alert(result.description || result.error || "Telegram API Error");
-            return;
-        }
-
-        if(!result.result){
-            alert("Invalid response from server");
+        if(result.ok !== true || !result.result){
+            alert(result.description || "Verification failed");
             return;
         }
 
@@ -874,22 +884,19 @@ function loadhomeTasks(){
             status === "creator"
         ){
 
-            const currentUserId = firebase.auth().currentUser?.uid;
-
-if(!currentUserId){
-    alert("User not logged in");
-    return;
-}
-
-await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-.update({
-    balance: firebase.firestore.FieldValue.increment(Number(reward))
-});
+            // ✅ Reward + mark completed
+            await userRef.update({
+                balance: firebase.firestore.FieldValue.increment(Number(reward)),
+                [`completedTasks.${taskId}`]: true
+            });
 
             const btn = document.getElementById("task-btn-"+taskId);
             if(btn){
-                btn.innerHTML =
-                    `<span class="text-green-400 font-bold">Done ✅</span>`;
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2 text-green-400 font-bold">
+                        <i class="fas fa-check-circle"></i> Done
+                    </div>
+                `;
             }
 
             localStorage.removeItem("verifyTask");
@@ -897,17 +904,14 @@ await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
             alert("✅ Task Completed");
 
         }else{
-            alert("You are not a member of this channel.");
+            alert("Join channel first");
         }
 
     }catch(error){
-
-        // 🔥 Show REAL JS error
-        console.log("JS Error:", error);
-        alert(error.message || error.toString());
-
+        alert(error.message || "Error");
     }
         }
+       
         async function processReferral(code) {
             if(!code) return; code = code.trim().toUpperCase();
             if(userData.referredBy || code === userData.referralCode) return;
@@ -1366,6 +1370,7 @@ await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
 </body>
 
 </html>
+
 
 
 
