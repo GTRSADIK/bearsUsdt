@@ -676,16 +676,17 @@ function startTask(taskId, link, reward){
                 try { if(userData && userData.referralCode) { await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(userData.referralCode).set({ userId: uid }, { merge: true }); } } catch(e) {}
                 updateHeader();
                 ref.onSnapshot(snapshot => { if (snapshot.exists) { userData = snapshot.data(); updateHeader(); } });
-            } catch(e) { userData = { balance: 0, referralCode: 'ERR' }; updateHeader(); }
-        }
+       
+        async function processReferral(code) {
+            if(!code) return; code = code.trim().toUpperCase();
+            if(userData.referredBy || code === userData.referralCode) return;
+  async function verifyTask(taskId){
 
-       async function verifyTask(taskId){
-
-    const tg = window.Telegram.WebApp;
-    const telegramUserId = tg.initDataUnsafe?.user?.id;
+    const tg = window.Telegram?.WebApp;
+    const telegramUserId = tg?.initDataUnsafe?.user?.id;
 
     if(!telegramUserId){
-        alert("Open from Telegram!");
+        alert("Open inside Telegram!");
         return;
     }
 
@@ -695,12 +696,12 @@ function startTask(taskId, link, reward){
     const reward = data.reward;
     const link = data.link;
 
-    // 🔥 Extract username from link
     let username = "";
 
-    if(link.includes("t.me/")){
-        username = link.split("t.me/")[1].replace("/", "");
-    } else {
+    try{
+        const urlObj = new URL(link);
+        username = urlObj.pathname.replace("/", "");
+    }catch{
         alert("Invalid Telegram link");
         return;
     }
@@ -715,9 +716,14 @@ function startTask(taskId, link, reward){
 
         const result = await res.json();
 
-        if(result.result.status === "member" ||
-           result.result.status === "administrator" ||
-           result.result.status === "creator"){
+        if(!result.ok){
+            alert(result.description);
+            return;
+        }
+
+        const status = result.result.status;
+
+        if(status === "member" || status === "administrator" || status === "creator"){
 
             await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
             .update({
@@ -737,17 +743,16 @@ function startTask(taskId, link, reward){
             localStorage.removeItem("verifyTask");
 
         } else {
-            alert("❌ You must join channel first");
+
+            alert("❌ Join channel first");
+
         }
 
     }catch(e){
-        alert("Verification Error");
+        alert("Network Error / CORS Blocked");
+        console.log(e);
     }
-}
-        async function processReferral(code) {
-            if(!code) return; code = code.trim().toUpperCase();
-            if(userData.referredBy || code === userData.referralCode) return;
-            try {
+    }          try {
                 const refCodeDoc = await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(code).get();
                 if(!refCodeDoc.exists) { showToast("Invalid Referral Code", "error"); return; }
                 const userRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/profile`).doc('main');
@@ -1202,3 +1207,4 @@ function startTask(taskId, link, reward){
 </body>
 
 </html>
+
