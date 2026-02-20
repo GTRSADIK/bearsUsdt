@@ -675,14 +675,13 @@ function startTask(taskId, link, reward){
                 }
                 try { if(userData && userData.referralCode) { await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(userData.referralCode).set({ userId: uid }, { merge: true }); } } catch(e) {}
                 updateHeader();
-                ref.onSnapshot(snapshot => {
-    if(snapshot.exists){
-        const data = snapshot.data();
-        userBalance = data.balance || 0;
-        updateHeader();
-    }
-});
-                               async function verifyTask(taskId){
+                ref.onSnapshot(snapshot => { if (snapshot.exists) { userData = snapshot.data(); updateHeader(); } });
+
+            } catch(e) { userData = { balance: 0, referralCode: 'ERR' }; updateHeader(); }
+
+        }
+
+         async function verifyTask(taskId){
 
     try{
 
@@ -1229,6 +1228,7 @@ function startTask(taskId, link, reward){
 </body>
 
 </html>
+
 
 
 
