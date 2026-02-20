@@ -542,12 +542,33 @@ id="nav-task">
         loadTasks();
     }
 }
-        function loadTasks(){
+        
+async function loadTasks(){
+
+    const container = document.getElementById("task-container");
+    if(!container) return;
+
+    container.innerHTML = "<p class='text-gray-400 text-center'>Loading...</p>";
+
+    const currentUser = firebase.auth().currentUser;
+    if(!currentUser){
+        container.innerHTML = "Login required";
+        return;
+    }
+
+    const currentUserId = currentUser.uid;
+
+    const userSnap = await db
+    .doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
+    .get();
+
+    const completedTasks = userSnap.data()?.completedTasks || {};
 
     db.collection(`artifacts/${appId}/public/data/tasks`)
+    .where("active","==",true)
+    .orderBy("createdAt","desc")
     .onSnapshot(snapshot=>{
 
-        const container = document.getElementById("task-container");
         container.innerHTML = "";
 
         if(snapshot.empty){
@@ -560,41 +581,61 @@ id="nav-task">
 
             const task = doc.data();
             const taskId = doc.id;
-            console.log(task.link);
-            if(task.active !== true) return;
 
             const div = document.createElement("div");
 
             div.className =
             "bg-gradient-to-r from-slate-800 to-slate-900 " +
             "p-4 rounded-2xl mb-3 border border-indigo-500/20 " +
-            "shadow-lg shadow-indigo-500/10 " +
-            "flex justify-between items-center transition hover:scale-[1.01]";
+            "shadow-lg flex justify-between items-center";
 
-            div.innerHTML = `
-                <div>
-                    <h3 class="text-white font-semibold text-sm mb-1">
-                        ${task.title}
-                    </h3>
-                    <p class="text-yellow-400 text-xs font-bold">
-                        🪙 ${task.reward} Points
-                    </p>
-                </div>
+            if(completedTasks[taskId]){
 
-                <div id="task-btn-${taskId}">
-    <button onclick="startTask('${taskId}','${task.link}',${task.reward})"
-    class="bg-indigo-600 px-4 py-2 rounded-xl text-white text-sm">
-        Join
-    </button>
-</div>
-            `;
+                div.innerHTML = `
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">
+                            ${task.title}
+                        </h3>
+                        <p class="text-yellow-400 text-xs font-bold">
+                            🪙 ${task.reward} Points
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-green-400 font-bold">
+                        <i class="fas fa-check-circle"></i> Done
+                    </div>
+                `;
+
+            }else{
+
+                div.innerHTML = `
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">
+                            ${task.title}
+                        </h3>
+                        <p class="text-yellow-400 text-xs font-bold">
+                            🪙 ${task.reward} Points
+                        </p>
+                    </div>
+
+                    <div id="task-btn-${taskId}">
+                        <button onclick="startTask('${taskId}','${task.link}',${task.reward})"
+                            class="bg-indigo-600 hover:bg-indigo-700
+                            text-white text-sm px-5 py-2 rounded-xl
+                            shadow-lg shadow-indigo-500/40
+                            transition duration-200">
+                            Join
+                        </button>
+                    </div>
+                `;
+            }
 
             container.appendChild(div);
+
         });
 
     });
-}
-
+    }
 
 // START TASK (OPEN LINK)
    function startTask(taskId, link, reward){
@@ -1325,6 +1366,7 @@ await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
 </body>
 
 </html>
+
 
 
 
