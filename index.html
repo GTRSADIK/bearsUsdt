@@ -461,7 +461,18 @@ id="nav-task">
         const db = firebase.firestore();
         const rtdb = firebase.database();
 
-       loadTasks();
+       firebase.auth().onAuthStateChanged(async function(user){
+
+    if(user){
+        console.log("User logged in:", user.uid);
+
+        await loadTasks();
+
+    }else{
+        console.log("No user logged in");
+    }
+
+});
         loadhomeTasks();
         let currentUser = null, userData = null, tgUser = null;
         let gamesPlayedSession = 0, pendingRewardAmount = 0, pendingRewardSrc = "";
@@ -1370,6 +1381,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
