@@ -796,64 +796,61 @@ function loadhomeTasks(){
 
         const { taskId, link, reward } = data;
 
-        if(!link){
-            alert("Task link missing");
-            return;
-        }
-
-        // ✅ Proper username extract
         let username = link
             .replace("https://t.me/", "")
             .replace("http://t.me/", "")
             .replace("@", "")
             .trim();
 
-        // remove slash if exists
         if(username.includes("/")){
             username = username.split("/")[0];
         }
-
-        console.log("Checking channel:", username);
-        console.log("User ID:", telegramUserId);
 
         const response = await fetch(
             `https://tonkeeper.info-gtrbusiness.workers.dev?chat=${username}&user=${telegramUserId}`
         );
 
         const result = await response.json();
-        console.log("Verify Response:", result);
 
-        if(!result.ok || !result.result){
-            alert("Verification failed");
-            return;
-        }
+        console.log("Full result:", result);
 
-        const status = result.result.status;
+        // 🔥 IMPORTANT FIX
+        if(result.ok === true && result.result){
 
-        if(
-            status === "member" ||
-            status === "administrator" ||
-            status === "creator"
-        ){
+            const status = result.result.status;
 
-            await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-            .update({
-                balance: firebase.firestore.FieldValue.increment(Number(reward))
-            });
+            if(
+                status === "member" ||
+                status === "administrator" ||
+                status === "creator"
+            ){
 
-            document.getElementById("task-btn-"+taskId).innerHTML =
-            `<span class="text-green-400 font-bold animate-pulse">Done ✅</span>`;
+                await db.doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
+                .update({
+                    balance: firebase.firestore.FieldValue.increment(Number(reward))
+                });
 
-            localStorage.removeItem("verifyTask");
+                const btn = document.getElementById("task-btn-"+taskId);
 
-            alert("✅ Task Completed + Reward Added");
+                if(btn){
+                    btn.innerHTML =
+                        `<span class="text-green-400 font-bold">Done ✅</span>`;
+                }
+
+                localStorage.removeItem("verifyTask");
+
+                alert("✅ Task Completed + Reward Added");
+
+            }else{
+                alert("❌ Join channel first");
+            }
 
         }else{
-            alert("❌ Join channel first");
+            alert("❌ Verification failed");
         }
 
     }catch(error){
-        console.log("Full Error:", error);
+        console.log("Verification Error:", error);
         alert("Verification Error");
     }
         }
@@ -1315,6 +1312,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
