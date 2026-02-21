@@ -1276,12 +1276,14 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
             document.getElementById('wallet-balance').innerText = userData.balance || 0;
             document.getElementById('profile-total-earned').innerText = userData.totalEarned || 0;
             document.getElementById('total-refers-display').innerText = userData.totalRefers || 0;
-            if (currentUser && currentUser.uid) {
-    document.getElementById('my-ref-code').innerText = currentUser.uid;
-} else {
-    document.getElementById('my-ref-code').innerText = '...';
-        }
-        }
+
+    // ✅ Referral UID show
+    if (currentUser && currentUser.uid) {
+        document.getElementById('my-ref-code').innerText = currentUser.uid;
+    } else {
+        document.getElementById('my-ref-code').innerText = '...';
+    }
+}
 
         function updateWithdrawUI() {
             document.getElementById('val-disp').innerText = SETTINGS.coinValue;
@@ -1547,6 +1549,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
