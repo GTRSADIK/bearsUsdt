@@ -38,19 +38,17 @@
 #content-area {
     min-height: calc(100vh - 70px);
     }
-        
-.dual-btn-wrapper{
+        .dual-btn-wrapper{
     display:flex;
     gap:12px;
-    margin-bottom:20px;
 }
 
 .btn-blue,
 .btn-dark{
-    flex:1;                 /* 2ta equal width */
-    padding:14px 0;
-    font-size:15px;
-    border-radius:14px;
+    flex:1;
+    padding:20px 0;       /* p-5 match feel */
+    font-size:16px;
+    border-radius:12px;   /* rounded-xl match */
     font-weight:600;
 }
 
@@ -63,13 +61,9 @@
 .btn-dark{
     background:#1e293b;
     color:white;
-    border:1px solid rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.08);
 }
 
-.btn-blue i,
-.btn-dark i{
-    margin-right:6px;
-        }
         /* Glassmorphism */
         .glass-card {
             background: rgba(30, 41, 59, 0.7);
@@ -239,15 +233,16 @@
             ≈ <span id="usdt-balance">0.00</span> USDT
         </p>
 </div>
-                <div class="dual-btn-wrapper">
-    <button onclick="showPage('task-page')" class="btn-blue">
-        <i class="fas fa-bolt"></i> Earn
-    </button>
+                <div class="mb-6">
+    <div class="dual-btn-wrapper">
+        <button onclick="showPage('task-page')" class="btn-blue">
+            <i class="fas fa-bolt"></i> Earn
+        </button>
 
-    <button onclick="showPage('wallet-page')" class="btn-dark">
-        <i class="fas fa-wallet"></i> Withdraw
-    </button>
-                </div>
+        <button onclick="showPage('wallet-page')" class="btn-dark">
+            <i class="fas fa-wallet"></i> Withdraw
+        </button>
+    </div>
                 </div>
                 <!-- Hero Section -->
                 <div onclick="startImageFinderGame()" class="relative w-full h-52 rounded-3xl overflow-hidden mb-8 cursor-pointer shadow-xl shadow-indigo-900/30 group border border-white/5">
@@ -1429,6 +1424,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
