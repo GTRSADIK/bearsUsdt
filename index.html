@@ -1011,7 +1011,33 @@ if (!currentUser || !currentUser.uid || !userData) {
                 balance: firebase.firestore.FieldValue.increment(Number(reward)),
                 [`completedTasks.${taskId}`]: true
             });
+          // 🔥 Reload updated data
+const updatedSnap = await userRef.get();
+const updatedData = updatedSnap.data() || {};
 
+const completedCount = Object.keys(updatedData.completedTasks || {}).length;
+
+// 🔥 Referral unlock check
+if (
+    updatedData.referredBy &&
+    !updatedData.referralRewarded &&
+    completedCount >= SETTINGS.minTaskForReferral
+) {
+
+    const referrerRef = db.doc(
+        `artifacts/${appId}/users/${updatedData.referredBy}/profile/main`
+    );
+
+    await userRef.update({
+        referralRewarded: true
+    });
+
+    await referrerRef.update({
+        totalRefers: firebase.firestore.FieldValue.increment(1)
+    });
+
+    alert("🎉 Referral Activated!");
+    }
             const btn = document.getElementById("task-btn-"+taskId);
             if(btn){
                 btn.innerHTML = `
@@ -1200,20 +1226,48 @@ if (!currentUser || !currentUser.uid || !userData) {
         }
 
         function loadSettings() {
-            db.collection(`artifacts/${appId}/public/data/settings`).doc('global')
-              .onSnapshot((doc) => {
-                if (doc.exists) {
-                    const d = doc.data();
-                    if(d.coinValue) SETTINGS.coinValue = d.coinValue;
-                    if(d.paymentMethods) SETTINGS.paymentMethods = d.paymentMethods;
-                    if(d.gameReward) SETTINGS.gameReward = d.gameReward;
-                    if(d.tttReward) SETTINGS.tttReward = d.tttReward;
-                    if(d.mathReward) SETTINGS.mathReward = d.mathReward;
-                    if(d.referralBonus) SETTINGS.referBonus = d.referralBonus; 
-                    if(d.signupBonus) SETTINGS.signupBonus = d.signupBonus;
-                    if(d.minWithdraw) SETTINGS.minWithdraw = d.minWithdraw;
+    db.collection(`artifacts/${appId}/public/data/settings`)
+    .doc('global')
+    .onSnapshot((doc) => {
 
-                    updateWithdrawUI();
+        if (!doc.exists) return;
+
+        const d = doc.data();
+
+        if (d.coinValue !== undefined)
+            SETTINGS.coinValue = d.coinValue;
+
+        if (d.paymentMethods !== undefined)
+            SETTINGS.paymentMethods = d.paymentMethods;
+
+        if (d.gameReward !== undefined)
+            SETTINGS.gameReward = d.gameReward;
+
+        if (d.tttReward !== undefined)
+            SETTINGS.tttReward = d.tttReward;
+
+        if (d.mathReward !== undefined)
+            SETTINGS.mathReward = d.mathReward;
+
+        // ✅ Referral Bonus
+        if (d.referralBonus !== undefined)
+            SETTINGS.referBonus = d.referralBonus;
+
+        // ✅ Signup Bonus
+        if (d.signupBonus !== undefined)
+            SETTINGS.signupBonus = d.signupBonus;
+
+        // ✅ Minimum Withdraw
+        if (d.minWithdraw !== undefined)
+            SETTINGS.minWithdraw = d.minWithdraw;
+
+        // ✅ NEW: Minimum Task For Referral Unlock
+        if (d.minTaskForReferral !== undefined)
+            SETTINGS.minTaskForReferral = d.minTaskForReferral;
+
+        updateWithdrawUI();
+    });
+        }
                     
                     if (d.socials) {
                         const s = d.socials;
@@ -1270,13 +1324,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
         document.getElementById('my-ref-code').innerText = '...';
     }
 }
-            const savedRef = sessionStorage.getItem('refCode');
-
-if (savedRef && currentUser && userData) {
-    setTimeout(() => {
-        processReferral(savedRef);
-    }, 1500);
-        }
+            
 
         function updateWithdrawUI() {
             document.getElementById('val-disp').innerText = SETTINGS.coinValue;
@@ -1542,6 +1590,7 @@ if (savedRef && currentUser && userData) {
 </body>
 
 </html>
+
 
 
 
