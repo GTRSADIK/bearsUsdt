@@ -563,20 +563,42 @@ id="nav-task">
                 }
             });
 
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.ready(); tg.expand();
-                const initDataUnsafe = tg.initDataUnsafe || {};
-                if(initDataUnsafe.start_param) sessionStorage.setItem('refCode', initDataUnsafe.start_param);
-                if (initDataUnsafe.user) { tgUser = initDataUnsafe.user; handleTelegramAuth(tgUser); } 
-                else fallbackAuth();
-            } else {
-                const urlParams = new URLSearchParams(window.location.search);
-                const ref = urlParams.get('startapp') || urlParams.get('ref');
-                if(ref) sessionStorage.setItem('refCode', ref);
-                fallbackAuth();
-            }
-        });
+            
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (window.Telegram && window.Telegram.WebApp) {
+
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const initDataUnsafe = tg.initDataUnsafe || {};
+
+        if (initDataUnsafe.start_param) {
+            sessionStorage.setItem('refCode', initDataUnsafe.start_param);
+        }
+
+        if (initDataUnsafe.user) {
+            tgUser = initDataUnsafe.user;
+            handleTelegramAuth(tgUser);
+        } else {
+            fallbackAuth();
+        }
+
+    } else {
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('startapp') || urlParams.get('ref');
+
+        if (ref) {
+            sessionStorage.setItem('refCode', ref);
+        }
+
+        fallbackAuth();
+    }
+
+});
 
        function showPage(pageId){
 
@@ -833,32 +855,69 @@ function loadhomeTasks(){
         });
 
         async function initUserData(uid) {
-            const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
-            try {
-                const doc = await ref.get();
-                if (!doc.exists) {
-                    const code = 'FAST' + Math.floor(10000 + Math.random() * 90000);
-                    const initialData = {
-                        uid: uid,
-                        telegramId: tgUser ? tgUser.id : 'anon',
-                        firstName: tgUser ? tgUser.first_name : 'Guest',
-                        balance: 0,
-                        referralCode: code,
-                        totalEarned: 0,
-                        totalRefers: 0,
-                        referredBy: null,
-                        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await ref.set(initialData);
-                    try { await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(code).set({ userId: uid }); } catch(e) {}
-                    userData = initialData;
-                } else {
-                    userData = doc.data();
-                }
-                try { if(userData && userData.referralCode) { await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(userData.referralCode).set({ userId: uid }, { merge: true }); } } catch(e) {}
+
+    const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
+
+    try {
+
+        const doc = await ref.get();
+
+        if (!doc.exists) {
+
+            const savedRef = sessionStorage.getItem('refCode');
+
+            let referredByUserId = null;
+
+            // ✅ If referral exists & not self
+            if (savedRef && savedRef !== uid) {
+                referredByUserId = savedRef;
+            }
+
+            const initialData = {
+                uid: uid,
+                telegramId: tgUser ? tgUser.id : 'anon',
+                firstName: tgUser ? tgUser.first_name : 'Guest',
+                balance: 0,
+                totalEarned: 0,
+                totalRefers: 0,
+                referredBy: referredByUserId,
+                joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await ref.set(initialData);
+
+            // ✅ Increase referrer's count
+            if (referredByUserId) {
+                await db
+                    .collection(`artifacts/${appId}/users/${referredByUserId}/profile`)
+                    .doc('main')
+                    .update({
+                        totalRefers: firebase.firestore.FieldValue.increment(1)
+                    });
+
+                sessionStorage.removeItem('refCode');
+            }
+
+            userData = initialData;
+
+        } else {
+
+            userData = doc.data();
+        }
+
+        updateHeader();
+
+        ref.onSnapshot(snapshot => {
+            if (snapshot.exists) {
+                userData = snapshot.data();
                 updateHeader();
-                ref.onSnapshot(snapshot => { if (snapshot.exists) { userData = snapshot.data(); updateHeader(); } });
-            } catch(e) { userData = { balance: 0, referralCode: 'ERR' }; updateHeader(); }
+            }
+        });
+
+    } catch (e) {
+        userData = { balance: 0 };
+        updateHeader();
+    }
         }
       async function verifyTask(){
 
@@ -960,45 +1019,89 @@ function loadhomeTasks(){
         alert(error.message || "Error");
     }
         }
-       
-        async function processReferral(code) {
-            if(!code) return; code = code.trim().toUpperCase();
-            if(userData.referredBy || code === userData.referralCode) return;
-            try {
-                const refCodeDoc = await db.collection(`artifacts/${appId}/public/data/referralCodes`).doc(code).get();
-                if(!refCodeDoc.exists) { showToast("Invalid Referral Code", "error"); return; }
-                const userRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/profile`).doc('main');
-                await userRef.update({
-                    balance: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
-                    totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
-                    referredBy: code
-                });
-                showToast(`Bonus: +${SETTINGS.signupBonus} Coins!`, "success");
-                const referrerId = refCodeDoc.data().userId;
-                const referrerRef = db.collection(`artifacts/${appId}/users/${referrerId}/profile`).doc('main');
-                try {
-                    await referrerRef.update({
-                        balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-                        totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-                        totalRefers: firebase.firestore.FieldValue.increment(1)
-                    });
-                    db.collection(`artifacts/${appId}/users/${referrerId}/earnings`).add({ amount: SETTINGS.referBonus, source: `Referral: ${userData.firstName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                } catch(err) { console.warn("Referrer update failed", err); }
-                sessionStorage.removeItem('refCode');
-            } catch(e) { console.log("Referral Error", e); }
+       async function processReferral(referrerUid) {
+
+    if (!referrerUid) return;
+
+    referrerUid = referrerUid.trim();
+
+    // ❌ Already referred
+    if (userData.referredBy) return;
+
+    // ❌ Self referral block
+    if (referrerUid === currentUser.uid) return;
+
+    try {
+
+        // ✅ Check referrer exists
+        const referrerDoc = await db
+            .collection(`artifacts/${appId}/users/${referrerUid}/profile`)
+            .doc('main')
+            .get();
+
+        if (!referrerDoc.exists) {
+            showToast("Invalid Referral Link", "error");
+            return;
         }
 
-        function redeemManualReferral() {
-            const code = document.getElementById('manual-ref-input').value;
-            if(!code) return showToast("Enter a code", "error");
-            processReferral(code);
-        }
+        const userRef = db
+            .collection(`artifacts/${appId}/users/${currentUser.uid}/profile`)
+            .doc('main');
 
+        // ✅ Give signup bonus
+        await userRef.update({
+            balance: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
+            totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
+            referredBy: referrerUid
+        });
+
+        showToast(`Bonus: +${SETTINGS.signupBonus} Coins!`, "success");
+
+        // ✅ Give referrer bonus
+        const referrerRef = db
+            .collection(`artifacts/${appId}/users/${referrerUid}/profile`)
+            .doc('main');
+
+        await referrerRef.update({
+            balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+            totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+            totalRefers: firebase.firestore.FieldValue.increment(1)
+        });
+
+        // Optional earning log
+        db.collection(`artifacts/${appId}/users/${referrerUid}/earnings`).add({
+            amount: SETTINGS.referBonus,
+            source: `Referral: ${userData.firstName}`,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        sessionStorage.removeItem('refCode');
+
+    } catch (e) {
+        console.log("Referral Error", e);
+    }
+    }
+        
         function shareOnTelegram() {
-            const botLink = `https://t.me/Earnfast11_bot?startapp=${userData.referralCode}`;
-            const text = `Join EarnFast & get ${SETTINGS.signupBonus} Coins Bonus! 🚀\nPlay Games & Earn Money.\n\n👇 Click here:\n${botLink}`;
-            const url = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
+
+    const botLink = `https://t.me/bearsusdtappbot/app?startapp=${currentUser.uid}`;
+
+    const text = `Join EarnFast & get ${SETTINGS.signupBonus} Coins Bonus! 🚀
+Play Games & Earn Money.
+
+👇 Click here:
+${botLink}`;
+
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(
+            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`
+        );
+    } else {
+        window.open(
+            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`,
+            '_blank'
+        );
+    }
         }
 
         function processGameWin(source) {
@@ -1158,7 +1261,11 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
             document.getElementById('wallet-balance').innerText = userData.balance || 0;
             document.getElementById('profile-total-earned').innerText = userData.totalEarned || 0;
             document.getElementById('total-refers-display').innerText = userData.totalRefers || 0;
-            document.getElementById('my-ref-code').innerText = userData.referralCode || '...';
+            if (currentUser && currentUser.uid) {
+    document.getElementById('my-ref-code').innerText = currentUser.uid;
+} else {
+    document.getElementById('my-ref-code').innerText = '...';
+        }
         }
 
         function updateWithdrawUI() {
@@ -1425,6 +1532,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
