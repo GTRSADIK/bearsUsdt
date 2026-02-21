@@ -38,6 +38,26 @@
 #content-area {
     min-height: calc(100vh - 70px);
     }
+        .btn-blue {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+}
+
+.btn-blue:active {
+    transform: scale(0.96);
+}
+
+/* Dark Button */
+.btn-dark {
+    background: #111827;
+    color: white;
+    border: 1px solid #1f2937;
+}
+
+.btn-dark:active {
+    transform: scale(0.96);
+            }
         /* Glassmorphism */
         .glass-card {
             background: rgba(30, 41, 59, 0.7);
@@ -207,6 +227,13 @@
             ≈ <span id="usdt-balance">0.00</span> USDT
         </p>
 </div>
+                <button onclick="showPage('task-page')" class="btn-blue">
+   <i class="fas fa-bolt"></i> Earn
+</button>
+
+<button onclick="showPage('wallet-page')" class="btn-dark">
+   <i class="fas fa-wallet"></i> Withdraw
+</button>
                 <!-- Hero Section -->
                 <div onclick="startImageFinderGame()" class="relative w-full h-52 rounded-3xl overflow-hidden mb-8 cursor-pointer shadow-xl shadow-indigo-900/30 group border border-white/5">
                     <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 transition duration-500 group-hover:scale-105"></div>
@@ -1387,6 +1414,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
