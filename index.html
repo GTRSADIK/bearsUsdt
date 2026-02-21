@@ -1270,6 +1270,13 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
         document.getElementById('my-ref-code').innerText = '...';
     }
 }
+            const savedRef = sessionStorage.getItem('refCode');
+
+if (savedRef && currentUser && userData) {
+    setTimeout(() => {
+        processReferral(savedRef);
+    }, 1500);
+        }
 
         function updateWithdrawUI() {
             document.getElementById('val-disp').innerText = SETTINGS.coinValue;
@@ -1535,6 +1542,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
