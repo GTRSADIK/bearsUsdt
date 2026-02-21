@@ -1148,7 +1148,13 @@ function loadhomeTasks(){
 
         function updateHeader() {
             if (!userData) return;
-            document.getElementById('header-balance').innerText = userData.balance || 0;
+            const balance = userData.balance || 0;
+
+document.getElementById('header-balance').innerText = balance;
+
+const usdtValue = balance * 0.00001;
+
+document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
             document.getElementById('wallet-balance').innerText = userData.balance || 0;
             document.getElementById('profile-total-earned').innerText = userData.totalEarned || 0;
             document.getElementById('total-refers-display').innerText = userData.totalRefers || 0;
@@ -1419,6 +1425,7 @@ function loadhomeTasks(){
 </body>
 
 </html>
+
 
 
 
