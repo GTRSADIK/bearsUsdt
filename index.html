@@ -511,19 +511,36 @@ id="nav-task">
         const auth = firebase.auth();
         const db = firebase.firestore();
         const rtdb = firebase.database();
+firebase.auth().onAuthStateChanged(async function(user){
 
-       firebase.auth().onAuthStateChanged(async function(user){
     if(user){
+
         console.log("User logged in:", user.uid);
 
+        currentUser = user;
+
+        // 🔥 First load user profile
+        await initUserData(user.uid);
+
+        // 🔥 Then load tasks
         await loadTasks();
 
+        // 🔥 Hide auth screen
+        document.getElementById("auth-screen")?.classList.add("hidden");
+
+        // 🔥 Show main app
+        document.getElementById("main-app")?.classList.remove("hidden");
+
     }else{
+
         console.log("No user logged in");
+
+        document.getElementById("auth-screen")?.classList.remove("hidden");
+        document.getElementById("main-app")?.classList.add("hidden");
     }
 
 });
-        loadhomeTasks();
+               
         let currentUser = null, userData = null, tgUser = null;
         let gamesPlayedSession = 0, pendingRewardAmount = 0, pendingRewardSrc = "";
         
@@ -1597,6 +1614,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
