@@ -511,41 +511,47 @@ id="nav-task">
         const auth = firebase.auth();
         const db = firebase.firestore();
         const rtdb = firebase.database();
-        firebase.auth().onAuthStateChanged(async function(user){
+        function showLoading() {
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("main-app").classList.add("hidden");
+}
 
-    if(user){
+function showApp() {
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("main-app").classList.remove("hidden");
+}
 
-        console.log("User logged in:", user.uid);
+firebase.auth().onAuthStateChanged(async function(user){
 
-        currentUser = user;
+    showLoading(); // 🔥 Always show loading first
 
-        try{
+    try {
+
+        if(user){
+
+            console.log("User logged in:", user.uid);
 
             await initUserData(user.uid);
+            await loadSettings();
             await loadTasks();
 
-            // 🔥 Hide loading screen
-            const authScreen = document.getElementById("auth-screen");
-            if(authScreen){
-                authScreen.style.display = "none";
-            }
+            showApp(); // ✅ Only after everything ready
 
-            // 🔥 Show main app
-            const mainApp = document.getElementById("main-app");
-            if(mainApp){
-                mainApp.classList.remove("hidden");
-            }
+        } else {
 
-        }catch(e){
-            console.log("Init error:", e);
+            console.log("No user logged in");
+            await firebase.auth().signInAnonymously();
+
         }
 
-    }else{
+    } catch (error) {
 
-        console.log("No user logged in");
+        console.log("Auth Error:", error);
 
-        document.getElementById("auth-screen")?.style.display = "flex";
-        document.getElementById("main-app")?.classList.add("hidden");
+        // Even if error, show app after 3 sec
+        setTimeout(() => {
+            showApp();
+        }, 3000);
     }
 
 });
@@ -1623,6 +1629,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
