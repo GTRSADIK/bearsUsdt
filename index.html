@@ -1033,91 +1033,77 @@ if (!currentUser || !currentUser.uid || !userData) {
         alert(error.message || "Error");
     }
         }
-            if (userData.referredBy) return;
-       async function processReferral(referrerUid) {
+            async function processReferral(refUid) {
 
-    if (!referrerUid) return;
+    if (!refUid) return;
+    if (!currentUser || !currentUser.uid) return;
+    if (!userData) return;
 
-    referrerUid = referrerUid.trim();
+    // prevent self referral
+    if (refUid === currentUser.uid) return;
 
-    // ❌ Already referred
+    // already referred
     if (userData.referredBy) return;
-
-    // ❌ Self referral block
-    if (referrerUid === currentUser.uid) return;
 
     try {
 
-        // ✅ Check referrer exists
-        const referrerDoc = await db
-            .collection(`artifacts/${appId}/users/${referrerUid}/profile`)
-            .doc('main')
-            .get();
+        const myRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/profile`).doc('main');
+        const referrerRef = db.collection(`artifacts/${appId}/users/${refUid}/profile`).doc('main');
+
+        const referrerDoc = await referrerRef.get();
 
         if (!referrerDoc.exists) {
-            showToast("Invalid Referral Link", "error");
+            console.log("Invalid referral UID");
             return;
         }
 
-        const userRef = db
-            .collection(`artifacts/${appId}/users/${currentUser.uid}/profile`)
-            .doc('main');
+        // Use transaction to prevent double bonus
+        await db.runTransaction(async (t) => {
 
-        // ✅ Give signup bonus
-        await userRef.update({
-            balance: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
-            totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
-            referredBy: referrerUid
+            const myDoc = await t.get(myRef);
+            if (myDoc.data().referredBy) return;
+
+            t.update(myRef, {
+                balance: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
+                totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
+                referredBy: refUid
+            });
+
+            t.update(referrerRef, {
+                balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+                totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+                totalRefers: firebase.firestore.FieldValue.increment(1)
+            });
+
         });
 
-        showToast(`Bonus: +${SETTINGS.signupBonus} Coins!`, "success");
-
-        // ✅ Give referrer bonus
-        const referrerRef = db
-            .collection(`artifacts/${appId}/users/${referrerUid}/profile`)
-            .doc('main');
-
-        await referrerRef.update({
-            balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-            totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-            totalRefers: firebase.firestore.FieldValue.increment(1)
-        });
-
-        // Optional earning log
-        db.collection(`artifacts/${appId}/users/${referrerUid}/earnings`).add({
-            amount: SETTINGS.referBonus,
-            source: `Referral: ${userData.firstName}`,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
+        showToast(`Referral Bonus Added!`, "success");
         sessionStorage.removeItem('refCode');
 
     } catch (e) {
-        console.log("Referral Error", e);
-    }
-    }
-        
-        function shareOnTelegram() {
-
-    const botLink = `https://t.me/bearsusdtappbot/app?startapp=${currentUser.uid}`;
-
-    const text = `Join EarnFast & get ${SETTINGS.signupBonus} Coins Bonus! 🚀
-Play Games & Earn Money.
-
-👇 Click here:
-${botLink}`;
-
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openTelegramLink(
-            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`
-        );
-    } else {
-        window.open(
-            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`,
-            '_blank'
-        );
+        console.log("Referral Error:", e);
     }
         }
+        function shareOnTelegram() {
+
+    if (!currentUser || !currentUser.uid) {
+        showToast("User not ready", "error");
+        return;
+    }
+
+    const botUsername = "bearsusdtappbot"; // change this
+
+    const botLink = `https://t.me/${botUsername}/app?startapp=${currentUser.uid}`;
+
+    const text =
+        `🚀 Join & Earn ${SETTINGS.signupBonus} Coins Bonus!\n\n` +
+        `Click below:\n${botLink}`;
+
+    const shareUrl =
+        `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
+
+    window.open(shareUrl, "_blank");
+    }
 
         function processGameWin(source) {
             let amount = SETTINGS.gameReward;
@@ -1549,6 +1535,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
