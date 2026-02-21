@@ -511,7 +511,7 @@ id="nav-task">
         const auth = firebase.auth();
         const db = firebase.firestore();
         const rtdb = firebase.database();
-firebase.auth().onAuthStateChanged(async function(user){
+        firebase.auth().onAuthStateChanged(async function(user){
 
     if(user){
 
@@ -519,23 +519,32 @@ firebase.auth().onAuthStateChanged(async function(user){
 
         currentUser = user;
 
-        // 🔥 First load user profile
-        await initUserData(user.uid);
+        try{
 
-        // 🔥 Then load tasks
-        await loadTasks();
+            await initUserData(user.uid);
+            await loadTasks();
 
-        // 🔥 Hide auth screen
-        document.getElementById("auth-screen")?.classList.add("hidden");
+            // 🔥 Hide loading screen
+            const authScreen = document.getElementById("auth-screen");
+            if(authScreen){
+                authScreen.style.display = "none";
+            }
 
-        // 🔥 Show main app
-        document.getElementById("main-app")?.classList.remove("hidden");
+            // 🔥 Show main app
+            const mainApp = document.getElementById("main-app");
+            if(mainApp){
+                mainApp.classList.remove("hidden");
+            }
+
+        }catch(e){
+            console.log("Init error:", e);
+        }
 
     }else{
 
         console.log("No user logged in");
 
-        document.getElementById("auth-screen")?.classList.remove("hidden");
+        document.getElementById("auth-screen")?.style.display = "flex";
         document.getElementById("main-app")?.classList.add("hidden");
     }
 
@@ -1614,6 +1623,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
