@@ -513,8 +513,6 @@ id="nav-task">
         const rtdb = firebase.database();
 
        firebase.auth().onAuthStateChanged(async function(user){
-document.getElementById("auth-screen").style.display="none";
-        document.getElementById("main-app").style.display="block";
     if(user){
         console.log("User logged in:", user.uid);
 
@@ -932,6 +930,8 @@ if (!currentUser || !currentUser.uid || !userData) {
             if (snapshot.exists) {
                 userData = snapshot.data();
                 updateHeader();
+                document.getElementById("auth-screen").style.display="none";
+        document.getElementById("main-app").style.display="block";
             }
         });
 
@@ -1597,6 +1597,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
