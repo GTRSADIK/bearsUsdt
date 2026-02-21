@@ -853,7 +853,10 @@ function loadhomeTasks(){
                 if(savedRef) setTimeout(() => processReferral(savedRef), 1500);
             }
         });
-
+if (!currentUser || !currentUser.uid || !userData) {
+    console.log("Referral skipped - user not ready");
+    return;
+        }
         async function initUserData(uid) {
 
     const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
@@ -1532,6 +1535,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
