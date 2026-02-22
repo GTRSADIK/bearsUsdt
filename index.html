@@ -1064,6 +1064,16 @@ if (
         console.log("Referral Error:", e);
     }
         }
+            function showPage(pageId) {
+    document.querySelectorAll(".page").forEach(page => {
+        page.style.display = "none";
+    });
+
+    const activePage = document.getElementById(pageId);
+    if (activePage) {
+        activePage.style.display = "block";
+    }
+        }
         function shareOnTelegram() {
 
     if (!currentUser || !currentUser.uid) {
@@ -1514,6 +1524,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
