@@ -502,10 +502,7 @@ id="nav-task">
         </button>
     </div>
 
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-    showDebugError(message);
-};
+    
 
 window.addEventListener("unhandledrejection", function(event) {
     showDebugError(event.reason);
@@ -553,6 +550,10 @@ firebase.auth().onAuthStateChanged(async function(user){
 
         if(user){
 
+            // ✅ ADD THIS
+            currentUser = user;
+            userData = null;
+
             console.log("User logged in:", user.uid);
 
             await initUserData(user.uid);
@@ -571,15 +572,14 @@ firebase.auth().onAuthStateChanged(async function(user){
     } catch (error) {
 
         console.error("Auth Error:", error);
-
         showDebugError(error.message || error);
 
         // ❌ showApp() dibena
         // loading screen e error show thakbe
-
     }
 
 });
+
                
         let currentUser = null, userData = null, tgUser = null;
         let gamesPlayedSession = 0, pendingRewardAmount = 0, pendingRewardSrc = "";
@@ -634,7 +634,8 @@ firebase.auth().onAuthStateChanged(async function(user){
 
             
 
-document.addEventListener("DOMContentLoaded", function () {
+
+window.addEventListener('DOMContentLoaded', async () => {
 
     if (window.Telegram && window.Telegram.WebApp) {
 
@@ -650,9 +651,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (initDataUnsafe.user) {
             tgUser = initDataUnsafe.user;
-            handleTelegramAuth(tgUser);
+            await handleTelegramAuth(tgUser);
         } else {
-            fallbackAuth();
+            await fallbackAuth();
         }
 
     } else {
@@ -664,10 +665,11 @@ document.addEventListener("DOMContentLoaded", function () {
             sessionStorage.setItem('refCode', ref);
         }
 
-        fallbackAuth();
+        await fallbackAuth();
     }
 
 });
+    
 
        
         
@@ -1064,16 +1066,7 @@ if (
         console.log("Referral Error:", e);
     }
         }
-            function showPage(pageId) {
-    document.querySelectorAll(".page").forEach(page => {
-        page.style.display = "none";
-    });
-
-    const activePage = document.getElementById(pageId);
-    if (activePage) {
-        activePage.style.display = "block";
-    }
-        }
+            
         function shareOnTelegram() {
 
     if (!currentUser || !currentUser.uid) {
@@ -1524,6 +1517,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
