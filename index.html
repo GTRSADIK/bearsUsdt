@@ -167,7 +167,6 @@
   
     <!-- LOADING SCREEN -->
    <div id="auth-screen" class="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
-<div id="debug-error" class="hidden mt-4 bg-red-500/10 border border-red-500 text-red-400 text-xs p-3 rounded-lg max-w-xs break-words"></div>
     <div class="relative w-32 h-32 mb-8">
 
     <!-- Glow -->
@@ -188,11 +187,16 @@
         <p class="text-slate-400 mb-8 text-sm">Loading your profile...</p>
         
         <div id="loading-spinner" class="flex flex-col items-center">
-            <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p class="text-xs text-slate-500" id="loading-text">Connecting...</p>
-        </div>
-    </div>
+    <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p class="text-xs text-slate-500" id="loading-text">Connecting...</p>
+</div>
 
+<!-- ✅ HERE (auth-screen er vitore) -->
+<div id="debug-error"
+     class="hidden mt-4 bg-red-500/10 border border-red-500 text-red-400 text-xs p-3 rounded-lg max-w-xs break-words">
+</div>
+
+</div>  <!-- ✅ Now close auth-screen -->
     <!-- MAIN APP INTERFACE -->
     <div id="main-app" class="hidden flex-1 flex flex-col h-full overflow-hidden">
         
@@ -1626,6 +1630,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
