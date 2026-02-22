@@ -167,7 +167,7 @@
   
     <!-- LOADING SCREEN -->
    <div id="auth-screen" class="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
-
+<div id="debug-error" class="hidden mt-4 bg-red-500/10 border border-red-500 text-red-400 text-xs p-3 rounded-lg max-w-xs break-words"></div>
     <div class="relative w-32 h-32 mb-8">
 
     <!-- Glow -->
@@ -492,6 +492,19 @@ id="nav-task">
     </div>
 
     <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+    showDebugError(message);
+};
+
+window.addEventListener("unhandledrejection", function(event) {
+    showDebugError(event.reason);
+});
+
+function showDebugError(err){
+    const box = document.getElementById("debug-error");
+    box.classList.remove("hidden");
+    box.innerText = "ERROR: " + err;
+        }
         // Updated Firebase Configuration for Earnjab
         const firebaseConfig = {
           apiKey: "AIzaSyDlNjXX67O4ots0ZKG7u7RAHrLsCiwcyqs",
@@ -523,7 +536,7 @@ function showApp() {
 
 firebase.auth().onAuthStateChanged(async function(user){
 
-    showLoading(); // 🔥 Always show loading first
+    showLoading();
 
     try {
 
@@ -535,7 +548,7 @@ firebase.auth().onAuthStateChanged(async function(user){
             await loadSettings();
             await loadTasks();
 
-            showApp(); // ✅ Only after everything ready
+            showApp();
 
         } else {
 
@@ -546,12 +559,13 @@ firebase.auth().onAuthStateChanged(async function(user){
 
     } catch (error) {
 
-        console.log("Auth Error:", error);
+        console.error("Auth Error:", error);
 
-        // Even if error, show app after 3 sec
-        setTimeout(() => {
-            showApp();
-        }, 3000);
+        showDebugError(error.message || error);
+
+        // ❌ showApp() dibena
+        // loading screen e error show thakbe
+
     }
 
 });
@@ -908,35 +922,49 @@ if (!currentUser || !currentUser.uid || !userData) {
     try {
 
         const doc = await ref.get();
-if (!doc.exists) {
 
-    const savedRef = sessionStorage.getItem('refCode');
+        if (!doc.exists) {
 
-    const initialData = {
-        uid: uid,
-        telegramId: tgUser ? tgUser.id : 'anon',
-        firstName: tgUser ? tgUser.first_name : 'Guest',
-        balance: 0,
-        totalEarned: 0,
-        totalRefers: 0,
-        completedTasks: {},
-        referralRewarded: false,
-        referredBy: null,
-        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+            const savedRef = sessionStorage.getItem('refCode');
 
-    await ref.set(initialData);
+            const initialData = {
+                uid: uid,
+                telegramId: tgUser ? tgUser.id : 'anon',
+                firstName: tgUser ? tgUser.first_name : 'Guest',
+                balance: 0,
+                totalEarned: 0,
+                totalRefers: 0,
+                completedTasks: {},
+                referralRewarded: false,
+                referredBy: null,
+                joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-    userData = initialData;
+            await ref.set(initialData);
 
-    // 🔥 Process referral AFTER create
-    if (savedRef && savedRef !== uid) {
-        await processReferral(savedRef);
-    }
+            userData = initialData;
 
-    sessionStorage.removeItem('refCode');
+            if (savedRef && savedRef !== uid) {
+                await processReferral(savedRef);
+            }
+
+            sessionStorage.removeItem('refCode');
         }
-        
+
+        // ✅ Existing user
+        else {
+            userData = doc.data();
+        }
+
+        updateHeader();
+
+    } catch (e) {
+
+        console.error("InitUser Error:", e);
+        showDebugError(e.message || e);
+
+    }
+        }
       async function verifyTask(){
 
     try{
@@ -1598,6 +1626,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
