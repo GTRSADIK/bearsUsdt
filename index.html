@@ -805,67 +805,7 @@ async function loadTasks(){
         `;
     }
         }
-function loadhomeTasks(){
 
-    db.collection(`artifacts/${appId}/public/data/tasks`)
-    .onSnapshot(snapshot=>{
-
-        const container = document.getElementById("home-task-container");
-        if(!container) return;
-
-        container.innerHTML = "";
-
-        if(snapshot.empty){
-            container.innerHTML =
-                "<p class='text-center text-gray-400'>No Tasks</p>";
-            return;
-        }
-
-        let count = 0; // 🔥 task counter
-
-        snapshot.forEach(doc=>{
-
-            if(count >= 3) return; // 🔥 only 3
-
-            const task = doc.data();
-            const taskId = doc.id;
-
-            if(task.active !== true) return;
-
-            count++; // 🔥 increase after active check
-
-            const div = document.createElement("div");
-
-            div.className =
-            "bg-gradient-to-r from-slate-800 to-slate-900 " +
-            "p-4 rounded-2xl mb-3 border border-indigo-500/20 " +
-            "shadow-lg shadow-indigo-500/10 " +
-            "flex justify-between items-center transition hover:scale-[1.01]";
-
-            div.innerHTML = `
-                <div>
-                    <h3 class="text-white font-semibold text-sm mb-1">
-                        ${task.title}
-                    </h3>
-                    <p class="text-yellow-400 text-xs font-bold">
-                        🪙 ${task.reward} Points
-                    </p>
-                </div>
-
-                <button onclick="startTask('${taskId}')"
-                    class="bg-indigo-600 hover:bg-indigo-700
-                    text-white text-sm px-5 py-2 rounded-xl
-                    shadow-lg shadow-indigo-500/50
-                    transition duration-200 hover:scale-105">
-                    Join
-                </button>
-            `;
-
-            container.appendChild(div);
-        });
-
-    });
-}
 // VERIFY TASK
    
         function startFakePaymentSlider() {
@@ -898,30 +838,9 @@ function loadhomeTasks(){
         }
         async function fallbackAuth() { try { await auth.signInAnonymously(); } catch (e) { console.error(e); } }
         
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                if (tgUser) {
-                    document.getElementById('user-name').innerText = tgUser.first_name;
-                    document.getElementById('profile-name').innerText = tgUser.first_name;
-                    if(tgUser.photo_url) {
-                         document.getElementById('user-avatar').src = tgUser.photo_url;
-                         document.getElementById('profile-avatar').src = tgUser.photo_url;
-                    }
-                }
-                setupPresenceSystem(user.uid);
-                await initUserData(user.uid);
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                loadSettings();
-                const savedRef = sessionStorage.getItem('refCode');
-                if(savedRef) setTimeout(() => processReferral(savedRef), 1500);
-            }
-        });
-if (!currentUser || !currentUser.uid || !userData) {
-    console.log("Referral skipped - user not ready");
-    return;
-        }
+        
+
+            
         async function initUserData(uid) {
 
     const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
@@ -1269,6 +1188,7 @@ if (
         }
 
         function loadSettings() {
+
     db.collection(`artifacts/${appId}/public/data/settings`)
     .doc('global')
     .onSnapshot((doc) => {
@@ -1277,75 +1197,40 @@ if (
 
         const d = doc.data();
 
-        if (d.coinValue !== undefined)
-            SETTINGS.coinValue = d.coinValue;
+        if (d.coinValue !== undefined) SETTINGS.coinValue = d.coinValue;
+        if (d.paymentMethods !== undefined) SETTINGS.paymentMethods = d.paymentMethods;
+        if (d.gameReward !== undefined) SETTINGS.gameReward = d.gameReward;
+        if (d.tttReward !== undefined) SETTINGS.tttReward = d.tttReward;
+        if (d.mathReward !== undefined) SETTINGS.mathReward = d.mathReward;
+        if (d.referralBonus !== undefined) SETTINGS.referBonus = d.referralBonus;
+        if (d.signupBonus !== undefined) SETTINGS.signupBonus = d.signupBonus;
+        if (d.minWithdraw !== undefined) SETTINGS.minWithdraw = d.minWithdraw;
+        if (d.minTaskForReferral !== undefined) SETTINGS.minTaskForReferral = d.minTaskForReferral;
 
-        if (d.paymentMethods !== undefined)
-            SETTINGS.paymentMethods = d.paymentMethods;
+        // ✅ socials must stay INSIDE here
+        if (d.socials) {
+            const s = d.socials;
+            const container = document.getElementById('social-container');
+            const iconsDiv = document.getElementById('social-icons');
+            iconsDiv.innerHTML = '';
+            let hasIcons = false;
 
-        if (d.gameReward !== undefined)
-            SETTINGS.gameReward = d.gameReward;
+            if (s.telegram) {
+                hasIcons = true;
+                iconsDiv.innerHTML += `<a href="${s.telegram}" target="_blank">Telegram</a>`;
+            }
 
-        if (d.tttReward !== undefined)
-            SETTINGS.tttReward = d.tttReward;
-
-        if (d.mathReward !== undefined)
-            SETTINGS.mathReward = d.mathReward;
-
-        // ✅ Referral Bonus
-        if (d.referralBonus !== undefined)
-            SETTINGS.referBonus = d.referralBonus;
-
-        // ✅ Signup Bonus
-        if (d.signupBonus !== undefined)
-            SETTINGS.signupBonus = d.signupBonus;
-
-        // ✅ Minimum Withdraw
-        if (d.minWithdraw !== undefined)
-            SETTINGS.minWithdraw = d.minWithdraw;
-
-        // ✅ NEW: Minimum Task For Referral Unlock
-        if (d.minTaskForReferral !== undefined)
-            SETTINGS.minTaskForReferral = d.minTaskForReferral;
+            if (hasIcons) container.classList.remove('hidden');
+            else container.classList.add('hidden');
+        }
 
         updateWithdrawUI();
+
+    }, (error) => {
+        console.error("Settings Sync Error:", error);
     });
         }
-                    
-                    if (d.socials) {
-                        const s = d.socials;
-                        const container = document.getElementById('social-container');
-                        const iconsDiv = document.getElementById('social-icons');
-                        iconsDiv.innerHTML = '';
-                        let hasIcons = false;
 
-                        if (s.telegram) {
-                            hasIcons = true;
-                            iconsDiv.innerHTML += `<a href="${s.telegram}" target="_blank" class="w-10 h-10 bg-[#229ED9] rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition hover:bg-white hover:text-[#229ED9]"><i class="fab fa-telegram-plane text-xl"></i></a>`;
-                        }
-                        if (s.youtube) {
-                            hasIcons = true;
-                            iconsDiv.innerHTML += `<a href="${s.youtube}" target="_blank" class="w-10 h-10 bg-[#FF0000] rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition hover:bg-white hover:text-[#FF0000]"><i class="fab fa-youtube text-xl"></i></a>`;
-                        }
-                        if (s.instagram) {
-                            hasIcons = true;
-                            iconsDiv.innerHTML += `<a href="${s.instagram}" target="_blank" class="w-10 h-10 bg-gradient-to-tr from-[#FFDC80] via-[#FD1D1D] to-[#833AB4] rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition hover:opacity-80"><i class="fab fa-instagram text-xl"></i></a>`;
-                        }
-
-                        if (hasIcons) {
-                            container.classList.remove('hidden');
-                        } else {
-                            container.classList.add('hidden');
-                        }
-                    }
-                    
-                    const referDisp = document.getElementById('refer-bonus-disp');
-                    if(referDisp) referDisp.innerText = SETTINGS.referBonus;
-                }
-            }, (error) => {
-                console.error("Settings Sync Error:", error);
-            });
-        }
 
         function updateHeader() {
             if (!userData) return;
@@ -1623,8 +1508,12 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
             });
         }
 
-        function copyRefCode() { navigator.clipboard.writeText(userData.referralCode); showToast("Code Copied!", "success"); }
-        function showToast(msg, type) {
+        function copyRefCode() {
+    if (!currentUser || !currentUser.uid) return;
+    navigator.clipboard.writeText(currentUser.uid);
+    showToast("Code Copied!", "success");
+            }
+            function showToast(msg, type) {
             const c = document.getElementById('toast-container'), t = document.createElement('div');
             t.className = `${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold px-4 py-3 rounded-full shadow-lg flex items-center gap-2 animate-float z-[101]`;
             t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : 'fa-info-circle'}"></i> ${msg}`; c.appendChild(t); setTimeout(() => t.remove(), 3000);
@@ -1633,6 +1522,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
