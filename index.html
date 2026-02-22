@@ -908,70 +908,35 @@ if (!currentUser || !currentUser.uid || !userData) {
     try {
 
         const doc = await ref.get();
+if (!doc.exists) {
 
-        if (!doc.exists) {
+    const savedRef = sessionStorage.getItem('refCode');
 
-            const savedRef = sessionStorage.getItem('refCode');
+    const initialData = {
+        uid: uid,
+        telegramId: tgUser ? tgUser.id : 'anon',
+        firstName: tgUser ? tgUser.first_name : 'Guest',
+        balance: 0,
+        totalEarned: 0,
+        totalRefers: 0,
+        completedTasks: {},
+        referralRewarded: false,
+        referredBy: null,
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-            let referredByUserId = null;
+    await ref.set(initialData);
 
-            // ✅ If referral exists & not self
-            if (savedRef && savedRef !== uid) {
-                referredByUserId = savedRef;
-            }
+    userData = initialData;
 
-            const initialData = {
-    uid: uid,
-    telegramId: tgUser ? tgUser.id : 'anon',
-    firstName: tgUser ? tgUser.first_name : 'Guest',
-    balance: 0,
-    totalEarned: 0,
-    totalRefers: 0,
-
-    // 🔥 Important for referral system
-    completedTasks: {},
-    referralRewarded: false,
-    referredBy: referredByUserId || null,
-
-    joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-};
-            await ref.set(initialData);
-
-            // ✅ Increase referrer's count
-            if (referredByUserId) {
-                await db
-                    .collection(`artifacts/${appId}/users/${referredByUserId}/profile`)
-                    .doc('main')
-                    .update({
-                        totalRefers: firebase.firestore.FieldValue.increment(1)
-                    });
-
-                sessionStorage.removeItem('refCode');
-            }
-
-            userData = initialData;
-
-        } else {
-
-            userData = doc.data();
-        }
-
-        updateHeader();
-
-        ref.onSnapshot(snapshot => {
-            if (snapshot.exists) {
-                userData = snapshot.data();
-                updateHeader();
-                document.getElementById("auth-screen").style.display="none";
-        document.getElementById("main-app").style.display="block";
-            }
-        });
-
-    } catch (e) {
-        userData = { balance: 0 };
-        updateHeader();
+    // 🔥 Process referral AFTER create
+    if (savedRef && savedRef !== uid) {
+        await processReferral(savedRef);
     }
+
+    sessionStorage.removeItem('refCode');
         }
+        
       async function verifyTask(){
 
     try{
@@ -1060,7 +1025,7 @@ const completedCount = Object.keys(updatedData.completedTasks || {}).length;
 if (
     updatedData.referredBy &&
     !updatedData.referralRewarded &&
-    completedCount >= SETTINGS.minTaskForReferral
+    completedCount >= (SETTINGS.minTaskForReferral || 3)
 ) {
 
     const referrerRef = db.doc(
@@ -1071,12 +1036,16 @@ if (
         referralRewarded: true
     });
 
-    await referrerRef.update({
-        totalRefers: firebase.firestore.FieldValue.increment(1)
-    });
+    const referrerSnap = await referrerRef.get();
+
+    if (referrerSnap.exists) {
+        await referrerRef.update({
+            totalRefers: firebase.firestore.FieldValue.increment(1)
+        });
+    }
 
     alert("🎉 Referral Activated!");
-    }
+        }
             const btn = document.getElementById("task-btn-"+taskId);
             if(btn){
                 btn.innerHTML = `
@@ -1629,6 +1598,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
