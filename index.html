@@ -665,19 +665,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
-       function showPage(pageId){
-
-    document.querySelectorAll('.page-section')
-    .forEach(p => p.classList.add('hidden'));
-
-    document.getElementById(pageId)
-    .classList.remove('hidden');
-
-    // 🔥 IMPORTANT
-    if(pageId === "task-page"){
-        loadTasks();
-    }
-}
+       
         
 async function loadTasks(){
 
@@ -1522,6 +1510,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
