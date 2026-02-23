@@ -628,7 +628,60 @@ firebase.auth().onAuthStateChanged(async function(user){
 
             
 
-
+async function initUserData(uid) {  
+  
+    const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');  
+  
+    try {  
+  
+        const doc = await ref.get();  
+  
+        if (!doc.exists) {  
+  
+            const savedRef = sessionStorage.getItem('refCode');  
+  
+            const initialData = {  
+                uid: uid,  
+                telegramId: tgUser ? Number(tgUser.id) : null,  
+                firstName: tgUser ? tgUser.first_name : 'Guest',  
+                balance: 0,  
+                totalEarned: 0,  
+                totalRefers: 0,  
+                completedTasks: {},  
+                referralRewarded: false,  
+                referredBy: null,  
+                joinedAt: firebase.firestore.FieldValue.serverTimestamp()  
+            };  
+  
+            await ref.set(initialData);  
+  
+            userData = initialData;  
+  
+            // ✅ Telegram self referral prevent  
+            if (  
+                savedRef &&  
+                tgUser &&  
+                Number(savedRef) !== Number(tgUser.id)  
+            ) {  
+                await processReferral(savedRef);  
+            }  
+  
+            sessionStorage.removeItem('refCode');  
+        }  
+        else {  
+            userData = doc.data();  
+        }  
+  
+        updateHeader();  
+        showApp();  
+  
+    } catch (e) {  
+  
+        console.error("InitUser Error:", e);  
+        showDebugError(e.message || e);  
+  
+    }  
+                }       
 
 
     
@@ -1490,6 +1543,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
