@@ -694,10 +694,13 @@ firebase.auth().onAuthStateChanged(async function(user){
     const completedTasks = userSnap.data()?.completedTasks || {};
 
     // 🔥 Load tasks from root collection
-    db.collection("tasks")
-    .where("active","==",true)
-    .orderBy("createdAt","desc")
-    .onSnapshot(snapshot=>{
+    db.collection("artifacts")
+.doc(appId)
+.collection("public")
+.doc("data")
+.collection("tasks")
+.where("active","==",true)
+.onSnapshot(snapshot=>{
 
         container.innerHTML = "";
 
@@ -1525,6 +1528,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
