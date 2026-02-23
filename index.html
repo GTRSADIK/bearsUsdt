@@ -630,45 +630,7 @@ firebase.auth().onAuthStateChanged(async function(user){
 
 
 
-document.addEventListener("DOMContentLoaded", async () => {
 
-    if (window.Telegram && window.Telegram.WebApp) {
-
-        const tg = window.Telegram.WebApp;
-
-        tg.ready();
-        tg.expand();
-
-        // 🔥 small delay to ensure user is ready
-        setTimeout(async () => {
-
-            const initData = tg.initDataUnsafe || {};
-
-            if (initData.start_param) {
-                sessionStorage.setItem("refCode", initData.start_param);
-            }
-
-            if (initData.user) {
-
-                tgUser = initData.user;
-                await handleTelegramAuth(tgUser);
-
-            } else {
-
-                console.log("Telegram user not ready");
-                await fallbackAuth();
-
-            }
-
-        }, 300); // delay 300ms
-
-    } else {
-
-        await fallbackAuth();
-
-    }
-
-});
     
 
    async function loadTasks(){
@@ -1528,6 +1490,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
