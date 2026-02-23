@@ -834,8 +834,7 @@ firebase.auth().onAuthStateChanged(async function(user){
         
         
 
-            
-        async function initUserData(uid) {
+       async function initUserData(uid) {
 
     const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
 
@@ -849,7 +848,7 @@ firebase.auth().onAuthStateChanged(async function(user){
 
             const initialData = {
                 uid: uid,
-                telegramId: tgUser ? tgUser.id : 'anon',
+                telegramId: tgUser ? Number(tgUser.id) : null,
                 firstName: tgUser ? tgUser.first_name : 'Guest',
                 balance: 0,
                 totalEarned: 0,
@@ -864,27 +863,32 @@ firebase.auth().onAuthStateChanged(async function(user){
 
             userData = initialData;
 
-            if (savedRef && savedRef !== uid) {
+            // ✅ Telegram self referral prevent
+            if (
+                savedRef &&
+                tgUser &&
+                Number(savedRef) !== Number(tgUser.id)
+            ) {
                 await processReferral(savedRef);
             }
 
             sessionStorage.removeItem('refCode');
         }
-
-        // ✅ Existing user
         else {
             userData = doc.data();
         }
 
         updateHeader();
-       showApp();
+        showApp();
+
     } catch (e) {
 
         console.error("InitUser Error:", e);
         showDebugError(e.message || e);
 
     }
-        }
+                }     
+        
       async function verifyTask(){
 
     try{
@@ -1024,83 +1028,66 @@ if (
         alert(error.message || "Error");
     }
         }
-            async function processReferral(refUid) {
+            async function processReferral(refTelegramId) {
 
-    if (!refUid) return;
+    if (!refTelegramId) return;
     if (!currentUser || !currentUser.uid) return;
     if (!userData) return;
 
-    // Prevent self referral
-    if (refUid === currentUser.uid) return;
+    // prevent self referral
+    if (tgUser && tgUser.id == refTelegramId) return;
 
-    // Already referred
+    // already referred
     if (userData.referredBy) return;
 
     try {
 
-        const myRef = db
-            .collection(`artifacts/${appId}/users/${currentUser.uid}/profile`)
-            .doc('main');
+        // 🔎 find referrer by telegramId
+        const query = await db.collectionGroup("profile")
+            .where("telegramId", "==", Number(refTelegramId))
+            .get();
 
-        const referrerRef = db
-            .collection(`artifacts/${appId}/users/${refUid}/profile`)
-            .doc('main');
-
-        const referrerDoc = await referrerRef.get();
-
-        if (!referrerDoc.exists) {
-            console.log("Invalid referral UID");
+        if (query.empty) {
+            console.log("Invalid referral");
             return;
         }
 
-        // 🔒 Transaction: Only Save referredBy (NO BONUS HERE)
-        await db.runTransaction(async (t) => {
+        const referrerDoc = query.docs[0];
 
-            const myDoc = await t.get(myRef);
+        const myRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/profile`)
+            .doc("main");
 
-            if (myDoc.data().referredBy) return;
-
-            t.update(myRef, {
-                referredBy: refUid
-            });
-
+        // ✅ ONLY SAVE referredBy (no bonus here)
+        await myRef.update({
+            referredBy: Number(refTelegramId)
         });
 
-        // Update local userData to prevent repeat call
-        userData.referredBy = refUid;
-
-        showToast("Referral Linked Successfully!", "success");
-        sessionStorage.removeItem('refCode');
+        console.log("Referral linked successfully");
 
     } catch (e) {
         console.log("Referral Error:", e);
     }
-            }
+          }
             
         function shareOnTelegram() {
 
-    firebase.auth().onAuthStateChanged(function(user){
+    if (!tgUser || !tgUser.id) {
+        alert("Telegram user not ready");
+        return;
+    }
 
-        if(!user){
-            alert("User not ready");
-            return;
-        }
+    const botUsername = "bearsusdtappbot";
 
-        const botUsername = "bearsusdtappbot"; // এখানে তোমার bot username
+    const botLink = `https://t.me/${botUsername}/app?startapp=${tgUser.id}`;
 
-        const botLink = `https://t.me/${botUsername}/app?startapp=${user.uid}`;
+    const text =
+        `🚀 Join & Earn Bonus!\n\n` +
+        `Click below:\n${botLink}`;
 
-        const text =
-            `🚀 Join & Earn Bonus!\n\n` +
-            `Click below:\n${botLink}`;
+    const shareUrl =
+        `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
 
-        const shareUrl =
-            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
-
-        window.open(shareUrl, "_blank");
-
-    });
-
+    window.open(shareUrl, "_blank");
         }
         function processGameWin(source) {
             let amount = SETTINGS.gameReward;
@@ -1532,6 +1519,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
