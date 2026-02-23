@@ -804,22 +804,7 @@ async function loadTasks(){
 
 // VERIFY TASK
    
-        function startFakePaymentSlider() {
-            const names = ["Rahul", "Priya", "Amit", "Sneha", "Vikram", "Anjali", "Rohit", "Kavita", "Arjun", "Neha"];
-            const amounts = [10, 20, 50, 100, 150];
-            const slider = document.getElementById('payment-slider');
-            setInterval(() => {
-                const oldSlide = slider.querySelector('.active');
-                if(oldSlide) { oldSlide.classList.remove('active'); oldSlide.classList.add('exit'); setTimeout(() => oldSlide.remove(), 500); }
-                const rName = names[Math.floor(Math.random() * names.length)];
-                const rAmt = amounts[Math.floor(Math.random() * amounts.length)];
-                const div = document.createElement('div');
-                div.className = 'payment-slide';
-                div.innerHTML = `<div class="flex items-center gap-2"><img src="https://ui-avatars.com/api/?name=${rName}&background=random" class="w-6 h-6 rounded-full"><span class="text-xs text-slate-300">${rName} withdrew <span class="text-green-400 font-bold">₹${rAmt}</span></span></div>`;
-                slider.appendChild(div);
-                setTimeout(() => div.classList.add('active'), 50);
-            }, 3500);
-        }
+        
 
       
         async function handleTelegramAuth(tUser) {
@@ -1508,6 +1493,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
