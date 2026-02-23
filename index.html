@@ -1079,25 +1079,29 @@ if (
             
         function shareOnTelegram() {
 
-    if (!currentUser || !currentUser.uid) {
-        showToast("User not ready", "error");
-        return;
-    }
+    firebase.auth().onAuthStateChanged(function(user){
 
-    const botUsername = "bearsusdtappbot"; // change this
+        if(!user){
+            alert("User not ready");
+            return;
+        }
 
-    const botLink = `https://t.me/${botUsername}/app?startapp=${currentUser.uid}`;
+        const botUsername = "bearsusdtappbot"; // এখানে তোমার bot username
 
-    const text =
-        `🚀 Join & Earn ${SETTINGS.signupBonus} Coins Bonus!\n\n` +
-        `Click below:\n${botLink}`;
+        const botLink = `https://t.me/${botUsername}/app?startapp=${user.uid}`;
 
-    const shareUrl =
-        `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
+        const text =
+            `🚀 Join & Earn Bonus!\n\n` +
+            `Click below:\n${botLink}`;
 
-    window.open(shareUrl, "_blank");
-    }
+        const shareUrl =
+            `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
 
+        window.open(shareUrl, "_blank");
+
+    });
+
+        }
         function processGameWin(source) {
             let amount = SETTINGS.gameReward;
             if (source.includes("Tic Tac Toe") && SETTINGS.tttReward) amount = SETTINGS.tttReward;
@@ -1528,6 +1532,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
