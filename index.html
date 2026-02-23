@@ -506,15 +506,7 @@ id="nav-task">
 
     
 <script>
-window.addEventListener("unhandledrejection", function(event) {
-    showDebugError(event.reason);
-});
 
-function showDebugError(err){
-    const box = document.getElementById("debug-error");
-    box.classList.remove("hidden");
-    box.innerText = "ERROR: " + err;
-        }
         // Updated Firebase Configuration for Earnjab
         const firebaseConfig = {
           apiKey: "AIzaSyDlNjXX67O4ots0ZKG7u7RAHrLsCiwcyqs",
@@ -1493,6 +1485,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
