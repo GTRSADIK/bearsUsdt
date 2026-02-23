@@ -833,10 +833,10 @@ firebase.auth().onAuthStateChanged(async function(user){
         async function fallbackAuth() { try { await auth.signInAnonymously(); } catch (e) { console.error(e); } }
         
         
+async function initUserData(uid) {
 
-       async function initUserData(uid) {
-
-    const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('main');
+    const ref = db.collection(`artifacts/${appId}/users/${uid}/profile`)
+        .doc("main");
 
     try {
 
@@ -844,12 +844,12 @@ firebase.auth().onAuthStateChanged(async function(user){
 
         if (!doc.exists) {
 
-            const savedRef = sessionStorage.getItem('refCode');
+            const savedRef = sessionStorage.getItem("refCode");
 
             const initialData = {
                 uid: uid,
-                telegramId: tgUser ? Number(tgUser.id) : null,
-                firstName: tgUser ? tgUser.first_name : 'Guest',
+                telegramId: tgUser ? tgUser.id.toString() : "anon",
+                firstName: tgUser ? tgUser.first_name : "Guest",
                 balance: 0,
                 totalEarned: 0,
                 totalRefers: 0,
@@ -863,19 +863,21 @@ firebase.auth().onAuthStateChanged(async function(user){
 
             userData = initialData;
 
-            // ✅ Telegram self referral prevent
+            // ✅ prevent self referral
             if (
                 savedRef &&
                 tgUser &&
-                Number(savedRef) !== Number(tgUser.id)
+                savedRef.toString() !== tgUser.id.toString()
             ) {
                 await processReferral(savedRef);
             }
 
-            sessionStorage.removeItem('refCode');
-        }
-        else {
+            sessionStorage.removeItem("refCode");
+
+        } else {
+
             userData = doc.data();
+
         }
 
         updateHeader();
@@ -887,7 +889,8 @@ firebase.auth().onAuthStateChanged(async function(user){
         showDebugError(e.message || e);
 
     }
-                }     
+    }
+       
         
       async function verifyTask(){
 
@@ -1028,6 +1031,7 @@ if (
         alert(error.message || "Error");
     }
         }
+            
             async function processReferral(refTelegramId) {
 
     if (!refTelegramId) return;
@@ -1035,16 +1039,16 @@ if (
     if (!userData) return;
 
     // prevent self referral
-    if (tgUser && tgUser.id == refTelegramId) return;
+    if (tgUser && tgUser.id.toString() === refTelegramId.toString()) return;
 
     // already referred
     if (userData.referredBy) return;
 
     try {
 
-        // 🔎 find referrer by telegramId
+        // 🔎 find referrer by telegramId (STRING MATCH)
         const query = await db.collectionGroup("profile")
-            .where("telegramId", "==", Number(refTelegramId))
+            .where("telegramId", "==", refTelegramId.toString())
             .get();
 
         if (query.empty) {
@@ -1059,7 +1063,7 @@ if (
 
         // ✅ ONLY SAVE referredBy (no bonus here)
         await myRef.update({
-            referredBy: Number(refTelegramId)
+            referredBy: refTelegramId.toString()
         });
 
         console.log("Referral linked successfully");
@@ -1067,8 +1071,7 @@ if (
     } catch (e) {
         console.log("Referral Error:", e);
     }
-          }
-            
+    }
         function shareOnTelegram() {
 
     if (!tgUser || !tgUser.id) {
@@ -1519,6 +1522,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
