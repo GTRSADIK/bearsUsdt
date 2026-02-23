@@ -665,30 +665,36 @@ firebase.auth().onAuthStateChanged(async function(user){
 });
     
 
-       
-        
-async function loadTasks(){
+   async function loadTasks(){
 
     const container = document.getElementById("task-container");
     if(!container) return;
 
-    container.innerHTML = "<p class='text-gray-400 text-center'>Loading...</p>";
+    container.innerHTML = `
+        <p class="text-gray-400 text-center py-4 animate-pulse">
+            Loading Tasks...
+        </p>
+    `;
 
-    const currentUser = firebase.auth().currentUser;
-    if(!currentUser){
-        container.innerHTML = "Login required";
+    const user = firebase.auth().currentUser;
+    if(!user){
+        container.innerHTML = `
+            <p class="text-red-400 text-center py-4">
+                Login required
+            </p>
+        `;
         return;
     }
 
-    const currentUserId = currentUser.uid;
-
+    // 🔥 Get completed tasks
     const userSnap = await db
-    .doc(`artifacts/${appId}/users/${currentUserId}/profile/main`)
-    .get();
+        .doc(`artifacts/${appId}/users/${user.uid}/profile/main`)
+        .get();
 
     const completedTasks = userSnap.data()?.completedTasks || {};
 
-    db.collection(`artifacts/${appId}/public/data/tasks`)
+    // 🔥 Load tasks from root collection
+    db.collection("tasks")
     .where("active","==",true)
     .orderBy("createdAt","desc")
     .onSnapshot(snapshot=>{
@@ -696,8 +702,11 @@ async function loadTasks(){
         container.innerHTML = "";
 
         if(snapshot.empty){
-            container.innerHTML =
-                "<p class='text-center text-gray-400'>No Tasks</p>";
+            container.innerHTML = `
+                <p class="text-center text-gray-400 py-6">
+                    No Tasks Available
+                </p>
+            `;
             return;
         }
 
@@ -711,7 +720,7 @@ async function loadTasks(){
             div.className =
             "bg-gradient-to-r from-slate-800 to-slate-900 " +
             "p-4 rounded-2xl mb-3 border border-indigo-500/20 " +
-            "shadow-lg flex justify-between items-center";
+            "shadow-lg flex justify-between items-center transition hover:scale-[1.02] duration-200";
 
             if(completedTasks[taskId]){
 
@@ -758,8 +767,17 @@ async function loadTasks(){
 
         });
 
+    }, error=>{
+        console.error("Task Load Error:", error);
+        container.innerHTML = `
+            <p class="text-red-400 text-center py-6">
+                Failed to load tasks
+            </p>
+        `;
     });
-    }
+
+    }    
+        
 
 // START TASK (OPEN LINK)
    function startTask(taskId, link, reward){
@@ -1507,6 +1525,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
