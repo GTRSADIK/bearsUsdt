@@ -630,36 +630,42 @@ firebase.auth().onAuthStateChanged(async function(user){
 
 
 
+document.addEventListener("DOMContentLoaded", async () => {
 
     if (window.Telegram && window.Telegram.WebApp) {
 
         const tg = window.Telegram.WebApp;
+
         tg.ready();
         tg.expand();
 
-        const initDataUnsafe = tg.initDataUnsafe || {};
+        // 🔥 small delay to ensure user is ready
+        setTimeout(async () => {
 
-        if (initDataUnsafe.start_param) {
-            sessionStorage.setItem('refCode', initDataUnsafe.start_param);
-        }
+            const initData = tg.initDataUnsafe || {};
 
-        if (initDataUnsafe.user) {
-            tgUser = initDataUnsafe.user;
-            await handleTelegramAuth(tgUser);
-        } else {
-            await fallbackAuth();
-        }
+            if (initData.start_param) {
+                sessionStorage.setItem("refCode", initData.start_param);
+            }
+
+            if (initData.user) {
+
+                tgUser = initData.user;
+                await handleTelegramAuth(tgUser);
+
+            } else {
+
+                console.log("Telegram user not ready");
+                await fallbackAuth();
+
+            }
+
+        }, 300); // delay 300ms
 
     } else {
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const ref = urlParams.get('startapp') || urlParams.get('ref');
-
-        if (ref) {
-            sessionStorage.setItem('refCode', ref);
-        }
-
         await fallbackAuth();
+
     }
 
 });
@@ -1522,6 +1528,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
