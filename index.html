@@ -948,19 +948,40 @@ const updatedData = updatedSnap.data() || {};
 
 const completedCount = Object.keys(updatedData.completedTasks || {}).length;
 
-// 🔥 Referral unlock check
 if (
     updatedData.referredBy &&
     !updatedData.referralRewarded &&
     completedCount >= (SETTINGS.minTaskForReferral || 3)
 ) {
 
-    await userRef.update({
-        referralRewarded: true
+    const referrerRef = db.doc(
+        `artifacts/${appId}/users/${updatedData.referredBy}/profile/main`
+    );
+
+    await db.runTransaction(async (t) => {
+
+        const myDoc = await t.get(userRef);
+        if (myDoc.data().referralRewarded) return;
+
+        const refDoc = await t.get(referrerRef);
+        if (!refDoc.exists) return;
+
+        // Mark as rewarded
+        t.update(userRef, {
+            referralRewarded: true
+        });
+
+        // Give bonus to referrer
+        t.update(referrerRef, {
+            balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+            totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
+            totalRefers: firebase.firestore.FieldValue.increment(1)
+        });
+
     });
 
-    alert("🎉 Referral Activated!");
-}
+    alert("🎉 Referral Bonus Activated!");
+    }
             const btn = document.getElementById("task-btn-"+taskId);
             if(btn){
                 btn.innerHTML = `
@@ -988,16 +1009,21 @@ if (
     if (!currentUser || !currentUser.uid) return;
     if (!userData) return;
 
-    // prevent self referral
+    // Prevent self referral
     if (refUid === currentUser.uid) return;
 
-    // already referred
+    // Already referred
     if (userData.referredBy) return;
 
     try {
 
-        const myRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/profile`).doc('main');
-        const referrerRef = db.collection(`artifacts/${appId}/users/${refUid}/profile`).doc('main');
+        const myRef = db
+            .collection(`artifacts/${appId}/users/${currentUser.uid}/profile`)
+            .doc('main');
+
+        const referrerRef = db
+            .collection(`artifacts/${appId}/users/${refUid}/profile`)
+            .doc('main');
 
         const referrerDoc = await referrerRef.get();
 
@@ -1006,33 +1032,29 @@ if (
             return;
         }
 
-        // Use transaction to prevent double bonus
+        // 🔒 Transaction: Only Save referredBy (NO BONUS HERE)
         await db.runTransaction(async (t) => {
 
             const myDoc = await t.get(myRef);
+
             if (myDoc.data().referredBy) return;
 
             t.update(myRef, {
-                balance: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
-                totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.signupBonus),
                 referredBy: refUid
-            });
-
-            t.update(referrerRef, {
-                balance: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-                totalEarned: firebase.firestore.FieldValue.increment(SETTINGS.referBonus),
-                totalRefers: firebase.firestore.FieldValue.increment(1)
             });
 
         });
 
-        showToast(`Referral Bonus Added!`, "success");
+        // Update local userData to prevent repeat call
+        userData.referredBy = refUid;
+
+        showToast("Referral Linked Successfully!", "success");
         sessionStorage.removeItem('refCode');
 
     } catch (e) {
         console.log("Referral Error:", e);
     }
-        }
+            }
             
         function shareOnTelegram() {
 
@@ -1485,6 +1507,7 @@ document.getElementById('usdt-balance').innerText = usdtValue.toFixed(4);
 </body>
 
 </html>
+
 
 
 
